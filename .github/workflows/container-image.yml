@@ -1,0 +1,100 @@
+name: Container Security and GHCR Release
+
+# Main branch only: building untrusted fork PRs in a publishing job is intentionally avoided.
+on:
+  push:
+    branches: [main]
+    paths:
+      - '.github/workflows/container-image.yml'
+      - 'Dockerfile'
+      - 'pyproject.toml'
+      - 'README.md'
+      - 'alembic.ini'
+      - 'alembic/**'
+      - 'src/**'
+      - 'scripts/smoke_test.py'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  packages: write
+
+concurrency:
+  group: container-release-${{ github.ref }}
+  cancel-in-progress: false
+
+jobs:
+  image-security-and-publish:
+    name: Test, scan, and publish the SAME image
+    if: github.repository == 'hectoraa0/opsforge' && github.ref == 'refs/heads/main'
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    env:
+      POSTGRES_PASSWORD: ci-only-test-password
+      GRAFANA_ADMIN_PASSWORD: ci-only-test-password
+    steps:
+      - name: Checkout
+        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+
+      - name: Python 3.12
+        uses: actions/setup-python@e797f83bcb11b83ae66e0230d6156d7c80228e7c # v6.0.0
+        with:
+          python-version: '3.12'
+          cache: pip
+
+      - name: Install and test Python source
+        run: |
+          python -m pip install -e '.[dev]'
+          ruff check .
+          pytest -q
+
+      - name: Build local container image (no credentials yet)
+        run: |
+          docker build --pull \
+            --label "org.opencontainers.image.source=https://github.com/${GITHUB_REPOSITORY}" \
+            --tag opsforge-api:ci \
+            --tag opsforge-api:latest .
+
+      - name: Start PostgreSQL and the SAME image for smoke tests
+        run: docker compose up --no-build -d
+
+      - name: Test running API and real PostgreSQL
+        run: python scripts/smoke_test.py
+
+      - name: Show logs if deployment or smoke tests failed
+        if: failure()
+        run: docker compose logs --no-color --tail=100
+
+      - name: Remove disposable CI database
+        if: always()
+        run: docker compose down -v --remove-orphans
+
+      - name: Scan image with Grype (block CRITICAL vulnerabilities)
+        uses: anchore/scan-action@27805bf3b4e84b4a5c980df22ed233c00390a439 # v7.4.2
+        with:
+          image: opsforge-api:ci
+          fail-build: true
+          severity-cutoff: critical
+          output-format: table
+          only-fixed: false
+
+      # Credentials are not made available to the scanner or Docker build.
+      - name: Authenticate to GHCR only after passing the scan
+        uses: docker/login-action@b45d80f862d83dbcd57f89517bcf500b2ab88fb2 # v4.0.0
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Publish commit-addressed image and moving main tag
+        shell: bash
+        run: |
+          set -euo pipefail
+          IMAGE="ghcr.io/${GITHUB_REPOSITORY,,}"
+          REVISION="sha-${GITHUB_SHA}"
+          docker tag opsforge-api:ci "$IMAGE:$REVISION"
+          docker push "$IMAGE:$REVISION"
+          docker tag opsforge-api:ci "$IMAGE:main"
+          docker push "$IMAGE:main"
+          echo "Published tested and scanned image: \`$IMAGE:$REVISION\`" >> "$GITHUB_STEP_SUMMARY"
+          echo "The \`main\` tag moves with future releases. Prefer SHA tags for deployments." >> "$GITHUB_STEP_SUMMARY"
