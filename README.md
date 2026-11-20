@@ -154,6 +154,28 @@ powershell -NoProfile -ExecutionPolicy Bypass -File .\scripts\run-load-test.ps1
 powershell -NoProfile -ExecutionPolicy Bypass -File .\scripts\run-load-test.ps1 -Rps 10 -DurationSeconds 30
 ```
 
+## Screenshots and verification evidence
+
+These screenshots come from actual local lab runs and GitHub Actions checks; they are not production monitoring evidence.
+
+### Grafana — API observability
+
+![OpsForge Grafana dashboard with request rate and p95 latency](docs/images/grafana-dashboard.png)
+
+The separate `observability` Compose profile provides the Grafana dashboard shown above. The 5xx panel may show **No data** when no 5xx series has been emitted; it is not itself proof that no error occurred.
+
+### Automated checks — GitHub Actions
+
+![Successful CI and container security workflow runs](docs/images/github-actions.png)
+
+Current status is also available through the [CI](https://github.com/hectoraa0/opsforge/actions/workflows/ci.yml), [Infrastructure CI](https://github.com/hectoraa0/opsforge/actions/workflows/infrastructure.yml), and [Container Security and GHCR Release](https://github.com/hectoraa0/opsforge/actions/workflows/container-image.yml) workflows.
+
+### Additional run evidence
+
+- [Kubernetes deployment and API readiness](docs/images/kubernetes-deployment.png)
+- [k6 load test — 10 RPS, zero HTTP failures](docs/images/k6-10rps.png)
+- [PostgreSQL restore verification — one incident restored](docs/images/postgres-restore.png)
+
 ## Repository guide
 
 | Location | Purpose |
