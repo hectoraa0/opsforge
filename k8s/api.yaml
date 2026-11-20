@@ -1,0 +1,128 @@
+# The image is built locally and loaded into the named kind cluster.
+# Keep one API replica while migrations run at container startup.
+apiVersion: v1
+kind: Service
+metadata:
+  name: opsforge-api
+  namespace: opsforge
+  labels:
+    app.kubernetes.io/name: opsforge-api
+spec:
+  type: ClusterIP
+  selector:
+    app.kubernetes.io/name: opsforge-api
+  ports:
+    - name: http
+      port: 8000
+      targetPort: http
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: opsforge-api
+  namespace: opsforge
+  labels:
+    app.kubernetes.io/name: opsforge-api
+spec:
+  replicas: 1
+  revisionHistoryLimit: 3
+  strategy:
+    type: Recreate
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: opsforge-api
+  template:
+    metadata:
+      labels:
+        app.kubernetes.io/name: opsforge-api
+    spec:
+      automountServiceAccountToken: false
+      securityContext:
+        runAsNonRoot: true
+        runAsUser: 10001
+        runAsGroup: 10001
+        seccompProfile:
+          type: RuntimeDefault
+      initContainers:
+        - name: wait-for-db
+          image: opsforge-api:kind
+          imagePullPolicy: IfNotPresent
+          env:
+            - name: DATABASE_URL
+              valueFrom:
+                secretKeyRef:
+                  name: opsforge-db
+                  key: database_url
+          command: ["python", "-c"]
+          args:
+            - |
+              import os
+              import time
+              from sqlalchemy import create_engine, text
+
+              engine = create_engine(os.environ["DATABASE_URL"], pool_pre_ping=True)
+              for _ in range(60):
+                  try:
+                      with engine.connect() as conn:
+                          conn.execute(text("SELECT 1"))
+                      print("Database connection established", flush=True)
+                      break
+                  except Exception:
+                      time.sleep(2)
+              else:
+                  raise SystemExit("Database unavailable after 120 seconds")
+          resources:
+            requests:
+              cpu: 20m
+              memory: 64Mi
+            limits:
+              cpu: 250m
+              memory: 256Mi
+          securityContext:
+            allowPrivilegeEscalation: false
+            capabilities:
+              drop: ["ALL"]
+      containers:
+        - name: api
+          image: opsforge-api:kind
+          imagePullPolicy: IfNotPresent
+          env:
+            - name: DATABASE_URL
+              valueFrom:
+                secretKeyRef:
+                  name: opsforge-db
+                  key: database_url
+            - name: LOG_LEVEL
+              value: INFO
+          ports:
+            - name: http
+              containerPort: 8000
+          startupProbe:
+            httpGet:
+              path: /health/live
+              port: http
+            periodSeconds: 3
+            failureThreshold: 40
+          readinessProbe:
+            httpGet:
+              path: /health/ready
+              port: http
+            periodSeconds: 5
+            timeoutSeconds: 3
+          livenessProbe:
+            httpGet:
+              path: /health/live
+              port: http
+            periodSeconds: 10
+            timeoutSeconds: 3
+          resources:
+            requests:
+              cpu: 50m
+              memory: 96Mi
+            limits:
+              cpu: 500m
+              memory: 384Mi
+          securityContext:
+            allowPrivilegeEscalation: false
+            capabilities:
+              drop: ["ALL"]
