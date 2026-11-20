@@ -1,0 +1,71 @@
+name: Infrastructure CI
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - '.github/workflows/infrastructure.yml'
+      - 'k8s/**'
+      - 'terraform/**'
+      - 'scripts/ci-kind.sh'
+      - 'Dockerfile'
+      - 'pyproject.toml'
+      - 'src/**'
+      - 'alembic/**'
+      - 'scripts/smoke_test.py'
+  pull_request:
+    paths:
+      - '.github/workflows/infrastructure.yml'
+      - 'k8s/**'
+      - 'terraform/**'
+      - 'scripts/ci-kind.sh'
+      - 'Dockerfile'
+      - 'pyproject.toml'
+      - 'src/**'
+      - 'alembic/**'
+      - 'scripts/smoke_test.py'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  terraform-check:
+    name: Terraform format and validation
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+      - name: Install Terraform
+        uses: hashicorp/setup-terraform@v3
+        with:
+          terraform_version: '1.17.1'
+      - name: Check formatting
+        run: terraform -chdir=terraform/kind fmt -check -recursive
+      - name: Initialize providers without remote state
+        run: terraform -chdir=terraform/kind init -backend=false -input=false -lockfile=readonly
+      - name: Validate Terraform configuration
+        run: terraform -chdir=terraform/kind validate -no-color
+
+  kind-integration:
+    name: Kubernetes deployment and recovery
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+      - name: Install kubectl
+        uses: azure/setup-kubectl@v4
+        with:
+          version: 'v1.37.0'
+      - name: Install Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: Install kind
+        run: |
+          curl -fsSLo /tmp/kind https://kind.sigs.k8s.io/dl/v0.33.0/kind-linux-amd64
+          chmod +x /tmp/kind
+          sudo mv /tmp/kind /usr/local/bin/kind
+          kind version
+      - name: Deploy, smoke test, and verify self-healing
+        run: bash scripts/ci-kind.sh
