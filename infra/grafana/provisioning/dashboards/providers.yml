@@ -1,0 +1,10 @@
+apiVersion: 1
+
+providers:
+  - name: OpsForge
+    folder: OpsForge
+    type: file
+    options:
+      path: /var/lib/grafana/dashboards
+    allowUiUpdates: false
+    updateIntervalSeconds: 30

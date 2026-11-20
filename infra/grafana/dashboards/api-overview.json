@@ -1,0 +1,13 @@
+{
+  "title": "OpsForge API Overview",
+  "uid": "opsforge-api",
+  "schemaVersion": 40,
+  "version": 1,
+  "refresh": "10s",
+  "time": {"from": "now-30m", "to": "now"},
+  "panels": [
+    {"id": 1, "type": "timeseries", "title": "Requests / second", "datasource": {"type": "prometheus", "uid": "prometheus"}, "gridPos": {"h": 9, "w": 12, "x": 0, "y": 0}, "targets": [{"refId": "A", "expr": "sum by (route) (rate(opsforge_http_requests_total[2m]))", "legendFormat": "{{route}}"}]},
+    {"id": 2, "type": "timeseries", "title": "HTTP 5xx / second", "datasource": {"type": "prometheus", "uid": "prometheus"}, "gridPos": {"h": 9, "w": 12, "x": 12, "y": 0}, "targets": [{"refId": "A", "expr": "sum(rate(opsforge_http_requests_total{status_code=~\"5..\"}[2m]))", "legendFormat": "5xx rate"}]},
+    {"id": 3, "type": "timeseries", "title": "p95 request latency (seconds)", "datasource": {"type": "prometheus", "uid": "prometheus"}, "gridPos": {"h": 9, "w": 24, "x": 0, "y": 9}, "targets": [{"refId": "A", "expr": "histogram_quantile(0.95, sum by (le) (rate(opsforge_http_request_duration_seconds_bucket[5m])))", "legendFormat": "p95"}]}
+  ]
+}

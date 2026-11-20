@@ -1,0 +1,16 @@
+.git
+.github
+.env
+.env.*
+!.env.example
+.venv
+__pycache__
+.pytest_cache
+.ruff_cache
+*.pyc
+*.db
+*.sqlite
+*.sqlite3
+.coverage
+*.egg-info
+build
