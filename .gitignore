@@ -16,3 +16,8 @@ build/
 dist/
 .idea/
 .vscode/
+**/.terraform/
+*.tfstate
+*.tfstate.*
+*.tfplan
+*.tfvars
