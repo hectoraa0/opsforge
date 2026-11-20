@@ -156,7 +156,22 @@ powershell -NoProfile -ExecutionPolicy Bypass -File .\scripts\run-load-test.ps1 
 
 ## Screenshots and verification evidence
 
-These screenshots come from actual local lab runs and GitHub Actions checks; they are not production monitoring evidence.
+All screenshots below come from real **local development lab runs** and GitHub Actions checks, not production services. Test incidents are synthetic demonstration data.
+
+### Application — FastAPI Swagger UI
+
+![OpsForge Swagger UI showing health checks and incident-management API endpoints](docs/images/swagger-api.png)
+
+The application exposes health endpoints and an incident-management REST API via interactive OpenAPI documentation. This is a developer/API interface, not a custom frontend.
+
+<details>
+<summary><strong>See a successful incident creation (HTTP 201)</strong></summary>
+
+![Synthetic high-severity incident successfully created with HTTP 201 and open status](docs/images/incident-created-201.png)
+
+A synthetic `Production server outage` incident was created through `POST /api/v1/incidents`. The server returned `201 Created`, a generated record ID and `status: open`.
+
+</details>
 
 ### Grafana — API observability
 
@@ -164,17 +179,32 @@ These screenshots come from actual local lab runs and GitHub Actions checks; the
 
 The separate `observability` Compose profile provides the Grafana dashboard shown above. The 5xx panel may show **No data** when no 5xx series has been emitted; it is not itself proof that no error occurred.
 
+### Kubernetes — running application and persistent storage
+
+![kind Kubernetes namespace with ready API and PostgreSQL Pods, Services, and Bound PVC](docs/images/kubernetes-deployment.png)
+
+Captured from `kubectl --context kind-opsforge -n opsforge get pods,svc,pvc`: both Pods are `1/1 Running`, and PostgreSQL uses a `Bound` persistent volume claim.
+
 ### Automated checks — GitHub Actions
 
 ![Successful CI and container security workflow runs](docs/images/github-actions.png)
 
-Current status is also available through the [CI](https://github.com/hectoraa0/opsforge/actions/workflows/ci.yml), [Infrastructure CI](https://github.com/hectoraa0/opsforge/actions/workflows/infrastructure.yml), and [Container Security and GHCR Release](https://github.com/hectoraa0/opsforge/actions/workflows/container-image.yml) workflows.
+Live status is available via [CI](https://github.com/hectoraa0/opsforge/actions/workflows/ci.yml), [Infrastructure CI](https://github.com/hectoraa0/opsforge/actions/workflows/infrastructure.yml), and [Container Security and GHCR Release](https://github.com/hectoraa0/opsforge/actions/workflows/container-image.yml).
 
-### Additional run evidence
+<details>
+<summary><strong>See load testing and PostgreSQL backup/restore evidence</strong></summary>
 
-- [Kubernetes deployment and API readiness](docs/images/kubernetes-deployment.png)
-- [k6 load test — 10 RPS, zero HTTP failures](docs/images/k6-10rps.png)
-- [PostgreSQL restore verification — one incident restored](docs/images/postgres-restore.png)
+**k6 — 10 RPS read-only local test**
+
+![k6 10 RPS performance result with 0 percent HTTP failures](docs/images/k6-10rps.png)
+
+**PostgreSQL — isolated backup restore verification**
+
+![PostgreSQL restore verification with one incident recovered](docs/images/postgres-restore.png)
+
+The k6 result measures short read-only traffic over a local port-forward, not production throughput. The restore test used a separate temporary database and verified one recovered incident.
+
+</details>
 
 ## Repository guide
 
