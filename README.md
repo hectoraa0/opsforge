@@ -1,4 +1,4 @@
-# OpsForge — DevOps Infrastructure & Delivery Lab
+# OpsForge вЂ” DevOps Infrastructure & Delivery Lab
 
 [![CI](https://github.com/hectoraa0/opsforge/actions/workflows/ci.yml/badge.svg)](https://github.com/hectoraa0/opsforge/actions/workflows/ci.yml)
 [![Infrastructure CI](https://github.com/hectoraa0/opsforge/actions/workflows/infrastructure.yml/badge.svg)](https://github.com/hectoraa0/opsforge/actions/workflows/infrastructure.yml)
@@ -50,9 +50,9 @@ flowchart LR
 
 ## Technology stack
 
-**Python 3.12 · FastAPI · SQLAlchemy · Alembic · PostgreSQL · Docker / Compose · Kubernetes (kind / kubectl) · Terraform · GitHub Actions · GHCR · Grype · Prometheus · Grafana · k6 · PowerShell**
+**Python 3.12 В· FastAPI В· SQLAlchemy В· Alembic В· PostgreSQL В· Docker / Compose В· Kubernetes (kind / kubectl) В· Terraform В· GitHub Actions В· GHCR В· Grype В· Prometheus В· Grafana В· k6 В· PowerShell**
 
-## Quick start — Docker Compose
+## Quick start вЂ” Docker Compose
 
 Requirements: Docker Desktop running with Linux containers, Docker Compose, Git and Windows PowerShell. Python 3.12+ is needed for local tests but not to run the containers.
 
@@ -82,7 +82,7 @@ Optional monitoring (requires more RAM):
 docker compose --profile observability up -d
 ```
 
-Open **Grafana:** http://127.0.0.1:3000 (user `admin`, password from `.env`); **Prometheus targets:** http://127.0.0.1:9090/targets. The preprovisioned dashboard is **Dashboards → OpsForge → OpsForge API Overview**.
+Open **Grafana:** http://127.0.0.1:3000 (user `admin`, password from `.env`); **Prometheus targets:** http://127.0.0.1:9090/targets. The preprovisioned dashboard is **Dashboards в†’ OpsForge в†’ OpsForge API Overview**.
 
 To stop containers **without deleting database volumes**, use `docker compose --profile observability down`. **Do not use `down -v` unless you deliberately intend to delete stored data.**
 
@@ -111,9 +111,9 @@ Terraform manages an **independent** environment in namespace `opsforge-tf`, not
 
 Three GitHub Actions workflows serve different purposes:
 
-1. **[CI](.github/workflows/ci.yml)** — lint, Python unit tests, Docker Compose integration smoke test.
-2. **[Infrastructure CI](.github/workflows/infrastructure.yml)** — Terraform validation and a short-lived kind integration/self-healing test on a GitHub runner.
-3. **[Container Security and GHCR Release](.github/workflows/container-image.yml)** — build, test and Grype-scan the same Docker image before publishing to GHCR. Critical findings fail the scan gate; a passing scan does **not** mean the image has no vulnerabilities.
+1. **[CI](.github/workflows/ci.yml)** вЂ” lint, Python unit tests, Docker Compose integration smoke test.
+2. **[Infrastructure CI](.github/workflows/infrastructure.yml)** вЂ” Terraform validation and a short-lived kind integration/self-healing test on a GitHub runner.
+3. **[Container Security and GHCR Release](.github/workflows/container-image.yml)** вЂ” build, test and Grype-scan the same Docker image before publishing to GHCR. Critical findings fail the scan gate; a passing scan does **not** mean the image has no vulnerabilities.
 
 Published image: `ghcr.io/hectoraa0/opsforge:main` (moving tag). Prefer immutable **commit-addressed tags**, such as `ghcr.io/hectoraa0/opsforge:sha-<full-git-commit-sha>`, for repeatable deployments.
 
@@ -158,53 +158,53 @@ powershell -NoProfile -ExecutionPolicy Bypass -File .\scripts\run-load-test.ps1 
 
 All screenshots below come from real **local development lab runs** and GitHub Actions checks, not production services. Test incidents are synthetic demonstration data.
 
-### Application — FastAPI Swagger UI
+### Application вЂ” FastAPI Swagger UI
 
 ![OpsForge Swagger UI showing health checks and incident-management API endpoints](docs/images/swagger-api.png)
 
 The application exposes health endpoints and an incident-management REST API via interactive OpenAPI documentation. This is a developer/API interface, not a custom frontend.
 
-<details>
-<summary><strong>See a successful incident creation (HTTP 201)</strong></summary>
+
+### See a successful incident creation (HTTP 201)
 
 ![Synthetic high-severity incident successfully created with HTTP 201 and open status](docs/images/incident-created-201.png)
 
 A synthetic `Production server outage` incident was created through `POST /api/v1/incidents`. The server returned `201 Created`, a generated record ID and `status: open`.
 
-</details>
 
-### Grafana — API observability
+
+### Grafana вЂ” API observability
 
 ![OpsForge Grafana dashboard with request rate and p95 latency](docs/images/grafana-dashboard.png)
 
 The separate `observability` Compose profile provides the Grafana dashboard shown above. The 5xx panel may show **No data** when no 5xx series has been emitted; it is not itself proof that no error occurred.
 
-### Kubernetes — running application and persistent storage
+### Kubernetes вЂ” running application and persistent storage
 
 ![kind Kubernetes namespace with ready API and PostgreSQL Pods, Services, and Bound PVC](docs/images/kubernetes-deployment.png)
 
 Captured from `kubectl --context kind-opsforge -n opsforge get pods,svc,pvc`: both Pods are `1/1 Running`, and PostgreSQL uses a `Bound` persistent volume claim.
 
-### Automated checks — GitHub Actions
+### Automated checks вЂ” GitHub Actions
 
 ![Successful CI and container security workflow runs](docs/images/github-actions.png)
 
 Live status is available via [CI](https://github.com/hectoraa0/opsforge/actions/workflows/ci.yml), [Infrastructure CI](https://github.com/hectoraa0/opsforge/actions/workflows/infrastructure.yml), and [Container Security and GHCR Release](https://github.com/hectoraa0/opsforge/actions/workflows/container-image.yml).
 
-<details>
-<summary><strong>See load testing and PostgreSQL backup/restore evidence</strong></summary>
 
-**k6 — 10 RPS read-only local test**
+### See load testing and PostgreSQL backup/restore evidence
+
+**k6 вЂ” 10 RPS read-only local test**
 
 ![k6 10 RPS performance result with 0 percent HTTP failures](docs/images/k6-10rps.png)
 
-**PostgreSQL — isolated backup restore verification**
+**PostgreSQL вЂ” isolated backup restore verification**
 
 ![PostgreSQL restore verification with one incident recovered](docs/images/postgres-restore.png)
 
 The k6 result measures short read-only traffic over a local port-forward, not production throughput. The restore test used a separate temporary database and verified one recovered incident.
 
-</details>
+
 
 ## Repository guide
 
@@ -232,4 +232,4 @@ The k6 result measures short read-only traffic over a local port-forward, not pr
 
 For architecture decisions, see [docs/DECISIONS.md](docs/DECISIONS.md). For a concise demonstration plan, see [docs/DEMO.md](docs/DEMO.md).
 
-**License:** MIT — see [LICENSE](LICENSE).
+**License:** MIT вЂ” see [LICENSE](LICENSE).
