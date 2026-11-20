@@ -21,3 +21,5 @@ dist/
 *.tfstate.*
 *.tfplan
 *.tfvars
+
+/backups/
